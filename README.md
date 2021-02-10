@@ -1,2 +1,2 @@
 # Geiger Counter N1
-## Based on AVR ATmega328 & Geiger Counter M4011
+* Based on AVR ATmega328 & Geiger-Muller tube M4011
