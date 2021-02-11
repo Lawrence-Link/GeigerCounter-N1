@@ -30,8 +30,13 @@ void setup(void) {
   Timer1.initialize(100000); //~0.1s
   Timer1.attachInterrupt(ISR_Timer1);
 }
-
-
+/*
+  #ifdef DEBUG
+        static bool led_debug = false;
+        led_debug = !led_debug;
+        led_red(led_debug);
+  #endif
+*/
 /* * * * * * * * * * * * * * * * * * The UI initially I i thought was
    LPD |■■■ | 70%        RUNNING  * something like this. Logo up left
  *                                 * and battery usage followed. It
@@ -128,10 +133,19 @@ void sensorISR() {
   //led_red(true); //turn red led on
   toneClick();
 }
-#define total_options 2
+
+#define total_options 2 // How many items in the setting list (started from 1)
 
 extern bool buttonActiveOK;
 extern bool longPressActive;
+
+void drawBrightness(uint8_t BRIGHTNESS) {
+  u8g2.setFont(u8g2_font_profont10_tr);
+  u8g2.drawFrame(9, 45, 110, 11);
+  u8g2.drawBox(9, 45, BRIGHTNESS, 11);
+  u8g2.drawStr(8, 38, "0");
+  u8g2.drawStr(107, 38, "100");
+}
 
 void loop(void) {
   switch (menu) {
@@ -154,10 +168,10 @@ void loop(void) {
           if (curr != NONE) {
             switch ( curr ) {
               case MID_SHORT : {
-                  IsRunning = !IsRunning;
+                  IsRunning = !IsRunning; // freezing function
                   break;
                 }
-              case MID_LONG : {
+              case MID_LONG : {  // long push on OK button will take user to setting menu
                   menu = SETTINGS;
                   break;
                 }
@@ -169,7 +183,7 @@ void loop(void) {
       }
 
     case SETTINGS: { // Settings Selecting
-        static int curr_sett = 0; //0 - brightness 1 - sound
+        static int curr_sett = 0; //0 - brightness 1 - sound, started from zero
         u8g2.firstPage();
         do {
           drawTitle("Settings");
@@ -197,10 +211,15 @@ void loop(void) {
                   break;
                 }
               case MID_LONG : {
-                //if (longPressActive == true && buttonActiveOK == false)
-                  menu = BRIGHTNESS;
-                break;
-              }
+                  //if (longPressActive == true && buttonActiveOK == false)
+                  if (curr_sett == 0) {
+                    menu = BRIGHTNESS;
+                  }
+                  if (curr_sett == 1) {
+                    menu = SOUND;
+                  }
+                  break;
+                }
             }
           }
 
@@ -210,11 +229,34 @@ void loop(void) {
 
     case BRIGHTNESS: { // Brightness Adjusting
         u8g2.firstPage();
-#ifdef DEBUG
-        static bool led_debug = false;
-        led_debug = !led_debug;
-        led_red(led_debug);
-#endif
+        static uint8_t _brightness = 0;
+        do {
+          drawTitle( "BRIGHTNESS" );
+
+          buttonReturnDef curr = refresh_button();
+          if (curr != NONE) {
+            switch ( curr ) {
+              case UPPER : {
+                  if (_brightness < 100) {
+                    _brightness++;
+                  }
+                  break;
+                }
+              case LOWER : {
+                  if (_brightness > 0) {
+                    _brightness--;
+                  }
+                  break;
+                }
+              case MID_LONG : {
+
+                  break;
+                }
+            }
+          }
+
+          drawBrightness(_brightness);
+        } while ( u8g2.nextPage() );
         break;
       }
 
