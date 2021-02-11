@@ -16,12 +16,13 @@ buttonReturnDef refresh_button() {
   static long buttonTimer = 0;
   static boolean buttonActive = false;
   static boolean longPressActive = false;
-
+  buttonReturnDef _buf;
+  
   if (digitalRead(up_btn) == LOW){
-    return UPPER;
+    _buf = UPPER;
   } else if (digitalRead(dn_btn) == LOW){
-    return LOWER;
-  }else if (digitalRead(ok_btn) == LOW) {
+    _buf = LOWER;
+  } else if (digitalRead(ok_btn) == LOW) {
     if (buttonActive == false) {
       buttonActive = true;
       buttonTimer = millis();
@@ -29,17 +30,20 @@ buttonReturnDef refresh_button() {
     if ((millis() - buttonTimer > longPressTime) && (longPressActive == false)) {
       longPressActive = true;
       // Long press
-      return MID_LONG;
+      _buf = MID_LONG;
     }
-  } else {
+  } else if(digitalRead(ok_btn) == HIGH) {
     if (buttonActive == true) {
       if (longPressActive == true) {
         longPressActive = false;
       } else {
         // short_press
-        return MID_SHORT;
+        _buf = MID_SHORT;
       }
       buttonActive = false;
     }
+  }else {
+    _buf = NONE;
   }
+  return _buf;
 }

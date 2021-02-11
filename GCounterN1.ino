@@ -15,6 +15,7 @@
 #include <TimerOne.h>
 
 bool IsRunning = true;
+enum {START, COUNT, SETTINGS, BRIGHTNESS, SOUND} menu = START;
 enum {SOS, ON, OFF} SoundEffect;
 enum buttonReturnDef;
 
@@ -72,7 +73,7 @@ void drawUICounting(float endResult = NULL) { // When Counter works..
     u8g2.drawXBMP(29, 2, BATT_100_WIDTH, BATT_100_HEIGHT, BATT_100);
   }
 
-  if (IsRunning) { // Showing running state
+  if (IsRunning == true) { // Showing running state
     u8g2.setFont(u8g2_font_timB08_tf);
     u8g2.drawStr(75, 9, "RUNNING");
   } else {
@@ -106,56 +107,62 @@ void drawUICounting(float endResult = NULL) { // When Counter works..
   u8g2.drawXBMP(62, 21, uSvH_WIDTH, uSvH_HEIGHT, uSvH); //draw unit of μSv/h
 }
 
+void drawSettings(int _curr){
+  u8g2.setFont(u8g2_font_t0_13b_mf);
+  u8g2.drawStr(22, 24, "Brightness");
+  u8g2.drawStr(22, 38, "Sound");
+  switch (_curr){
+    case 0: u8g2.drawStr(19, 24, ">"); break;
+    case 1: u8g2.drawStr(19, 38, ">"); break;
+  }
+}
+
 void ISR_Timer1() {
 
 }
 
 bool hasTrigged = false;
-int menu = 0;
 // volatile bool SOS = false;
 
 void sensorISR() {
   hasTrigged = true;
-  led_red(true); //turn red led on
+  //led_red(true); //turn red led on
   toneClick();
 }
-
+#define total_options 2
 void loop(void) {
   switch (menu) {
-    case 0: { // Start
+    case START: { // Start
         u8g2.firstPage();
         do {
           if (hasTrigged == false) {
             u8g2.drawXBMP(1, 0, 128, 64, Start_IMG); // intro
-
-#ifdef DEBUG
-            static bool led_debug = false;
-            led_debug = !led_debug;
-            led_blue(led_debug);
-#endif
-
           } else { // If the first pulse has detected.
-            menu = 1;
+            menu = COUNT;
           }
         } while ( u8g2.nextPage() );
         break;
       }
 
-    case 1: { // Counting Screen
+    case COUNT: { // Counting Screen
         u8g2.firstPage();
         do {
           buttonReturnDef curr = refresh_button();
           if (curr != NONE) {
             switch ( curr ) {
               case MID_SHORT : {
-                  IsRunning = !IsRunning();
+                  IsRunning = !IsRunning;
+#ifdef DEBUG
+                  static bool led_debug = false;
+                  led_debug = !led_debug;
+                  led_blue(led_debug);
+#endif
                   break;
                 }
-
               case MID_LONG : {
-                  
-                  break;
-                }
+                menu = 2;
+                break;
+              }
             }
           }
           drawUICounting();
@@ -163,20 +170,36 @@ void loop(void) {
         break;
       }
 
-    case 2: { // Settings Selecting
+    case SETTINGS: { // Settings Selecting
+      int curr_sett = 0; //0 - brightness 1 - sound
         u8g2.firstPage();
         do {
+          buttonReturnDef curr = refresh_button();
+          if (curr != NONE) {
+            switch ( curr ) {
+              case UPPER : {
+                if (curr_sett > 0) { curr_sett--; }
+                else {curr_sett = total_options - 1;}
+                break;  
+              }
+              case LOWER : {
+                if (curr_sett < total_options - 1){ curr_sett++; }
+                else { curr_sett = 0; }
+              }
+            }
+          }   
           drawTitle("Settings");
+          drawSettings(curr_sett);
         } while ( u8g2.nextPage() );
         break;
       }
 
-    case 3: { // Brightness Adjusting
+    case BRIGHTNESS: { // Brightness Adjusting
         u8g2.firstPage();
         break;
       }
 
-    case 4: { // Sound Effect
+    case SOUND: { // Sound Effect
         u8g2.firstPage();
       }
   }

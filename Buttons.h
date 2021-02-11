@@ -3,7 +3,8 @@
 
 //extern enum buttonReturnDef;
 void buttons_init();
-//buttonReturnDef refresh_button();
 enum buttonReturnDef {NONE, UPPER, MID_SHORT, MID_LONG, LOWER}; 
+
+buttonReturnDef refresh_button();
 
 #endif
