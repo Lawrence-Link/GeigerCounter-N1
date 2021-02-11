@@ -16,7 +16,7 @@
 
 bool IsRunning = true;
 enum {START, COUNT, SETTINGS, BRIGHTNESS, SOUND} menu = START;
-enum {SOS, ON, OFF} SoundEffect;
+enum {SOS, ON, OFF} SoundEffect = SOS;
 enum buttonReturnDef;
 
 U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
@@ -29,7 +29,6 @@ void setup(void) {
   attachInterrupt(INT0, sensorISR, FALLING); //Detect pulse at the falling edge
   Timer1.initialize(100000); //~0.1s
   Timer1.attachInterrupt(ISR_Timer1);
-  SoundEffect = SOS;
 }
 
 
@@ -107,13 +106,13 @@ void drawUICounting(float endResult = NULL) { // When Counter works..
   u8g2.drawXBMP(62, 21, uSvH_WIDTH, uSvH_HEIGHT, uSvH); //draw unit of μSv/h
 }
 
-void drawSettings(int _curr){
+void drawSettings(int _curr) {
   u8g2.setFont(u8g2_font_t0_13b_mf);
-  u8g2.drawStr(22, 24, "Brightness");
-  u8g2.drawStr(22, 38, "Sound");
-  switch (_curr){
-    case 0: u8g2.drawStr(19, 24, ">"); break;
-    case 1: u8g2.drawStr(19, 38, ">"); break;
+  u8g2.drawStr(28, 26, "Brightness");
+  u8g2.drawStr(28, 40, "Sound");
+  switch (_curr) {
+    case 0: u8g2.drawStr(17, 26, ">"); break;
+    case 1: u8g2.drawStr(17, 40, ">"); break;
   }
 }
 
@@ -130,6 +129,10 @@ void sensorISR() {
   toneClick();
 }
 #define total_options 2
+
+extern bool buttonActiveOK;
+extern bool longPressActive;
+
 void loop(void) {
   switch (menu) {
     case START: { // Start
@@ -152,17 +155,12 @@ void loop(void) {
             switch ( curr ) {
               case MID_SHORT : {
                   IsRunning = !IsRunning;
-#ifdef DEBUG
-                  static bool led_debug = false;
-                  led_debug = !led_debug;
-                  led_blue(led_debug);
-#endif
                   break;
                 }
               case MID_LONG : {
-                menu = 2;
-                break;
-              }
+                  menu = SETTINGS;
+                  break;
+                }
             }
           }
           drawUICounting();
@@ -171,31 +169,52 @@ void loop(void) {
       }
 
     case SETTINGS: { // Settings Selecting
-      int curr_sett = 0; //0 - brightness 1 - sound
+        static int curr_sett = 0; //0 - brightness 1 - sound
         u8g2.firstPage();
         do {
+          drawTitle("Settings");
+          drawSettings(curr_sett);
+
           buttonReturnDef curr = refresh_button();
           if (curr != NONE) {
             switch ( curr ) {
               case UPPER : {
-                if (curr_sett > 0) { curr_sett--; }
-                else {curr_sett = total_options - 1;}
-                break;  
-              }
+                  if (curr_sett > 0) {
+                    curr_sett--;
+                  }
+                  else {
+                    curr_sett = total_options - 1;
+                  }
+                  break;
+                }
               case LOWER : {
-                if (curr_sett < total_options - 1){ curr_sett++; }
-                else { curr_sett = 0; }
+                  if (curr_sett < total_options - 1) {
+                    curr_sett++;
+                  }
+                  else {
+                    curr_sett = 0;
+                  }
+                  break;
+                }
+              case MID_LONG : {
+                //if (longPressActive == true && buttonActiveOK == false)
+                  menu = BRIGHTNESS;
+                break;
               }
             }
-          }   
-          drawTitle("Settings");
-          drawSettings(curr_sett);
+          }
+
         } while ( u8g2.nextPage() );
         break;
       }
 
     case BRIGHTNESS: { // Brightness Adjusting
         u8g2.firstPage();
+#ifdef DEBUG
+        static bool led_debug = false;
+        led_debug = !led_debug;
+        led_red(led_debug);
+#endif
         break;
       }
 
