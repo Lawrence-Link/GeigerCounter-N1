@@ -13,11 +13,13 @@
 #include <Wire.h>
 #include <U8g2lib.h>
 #include <TimerOne.h>
+#include <EEPROM.h>
 
 bool IsRunning = true;
 enum {START, COUNT, SETTINGS, BRIGHTNESS, SOUND} menu = START;
 enum {SOS, ON, OFF} SoundEffect = SOS;
 enum buttonReturnDef;
+enum {BRI_st, SOU_st} setaddr;
 
 U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
@@ -29,6 +31,7 @@ void setup(void) {
   attachInterrupt(INT0, sensorISR, FALLING); //Detect pulse at the falling edge
   Timer1.initialize(100000); //~0.1s
   Timer1.attachInterrupt(ISR_Timer1);
+  u8g2.setContrast(EEPROM.read(0));
 }
 /*
   #ifdef DEBUG
@@ -128,6 +131,17 @@ void ISR_Timer1() {
 bool hasTrigged = false;
 // volatile bool SOS = false;
 
+void drawSoundSettings(int curr){
+  u8g2.drawXBMP(12, 27, LARGE_SOS_WIDTH, LARGE_SOS_HEIGHT, LARGE_SOS);
+  u8g2.drawXBMP(54, 27, LARGE_VOL_ON_WIDTH, LARGE_VOL_ON_HEIGHT, LARGE_VOL_ON);
+  u8g2.drawXBMP(92, 27, LARGE_VOL_OFF_WIDTH, LARGE_VOL_OFF_HEIGHT, LARGE_VOL_OFF);
+  switch (curr){
+    case 0: u8g2.drawFrame(9, 25, 33, 25); break;
+    case 1: u8g2.drawFrame(47, 25, 33, 25); break;
+    case 2: u8g2.drawFrame(89, 25, 33, 25); break;
+  }
+}
+
 void sensorISR() {
   hasTrigged = true;
   //led_red(true); //turn red led on
@@ -141,10 +155,13 @@ extern bool longPressActive;
 
 void drawBrightness(uint8_t BRIGHTNESS) {
   u8g2.setFont(u8g2_font_profont10_tr);
-  u8g2.drawFrame(9, 45, 110, 11);
-  u8g2.drawBox(9, 45, BRIGHTNESS, 11);
-  u8g2.drawStr(8, 38, "0");
-  u8g2.drawStr(107, 38, "100");
+  u8g2.drawFrame(9, 41, 110, 11);
+  u8g2.drawBox(9, 41, BRIGHTNESS, 11);
+  u8g2.drawStr(8, 59, "0");
+  u8g2.drawStr(107, 59, "100");
+  u8g2.drawXBMP(BRIGHTNESS+7, 36, dn_arr_WIDTH, dn_arr_HEIGHT, dn_arr); // draw down arror which show the current selection
+  u8g2.setCursor(BRIGHTNESS+7, 33);
+  u8g2.print(BRIGHTNESS);
 }
 
 void loop(void) {
@@ -229,10 +246,9 @@ void loop(void) {
 
     case BRIGHTNESS: { // Brightness Adjusting
         u8g2.firstPage();
-        static uint8_t _brightness = 0;
+        static uint8_t _brightness = EEPROM.read(0);
         do {
           drawTitle( "BRIGHTNESS" );
-
           buttonReturnDef curr = refresh_button();
           if (curr != NONE) {
             switch ( curr ) {
@@ -249,19 +265,53 @@ void loop(void) {
                   break;
                 }
               case MID_LONG : {
-
+                  EEPROM.write(0, _brightness);
+                  menu = COUNT;
                   break;
                 }
+                u8g2.setContrast(map(_brightness, 0, 100, 0, 255));
             }
           }
-
           drawBrightness(_brightness);
         } while ( u8g2.nextPage() );
         break;
       }
-
+      
     case SOUND: { // Sound Effect
         u8g2.firstPage();
+        do {
+          static int curr_sound = EEPROM.read(1);
+          drawTitle("SOUND");
+          buttonReturnDef curr = refresh_button();
+          if (curr != NONE) {
+            switch ( curr ) {
+              case UPPER : {
+                  if (curr_sound > 0) {
+                    curr_sound--;
+                  }
+                  else {
+                    curr_sound = 2;
+                  }
+                  break;
+                }
+              case LOWER : {
+                  if (curr_sound < 2) {
+                    curr_sound++;
+                  }
+                  else {
+                    curr_sound = 0;
+                  }
+                  break;
+                }
+              case MID_LONG : {
+                  EEPROM.write(1, curr_sound);
+                  menu = COUNT;
+                  break;
+                }
+            }
+          }
+          drawSoundSettings(curr_sound);
+        }while ( u8g2.nextPage() );
       }
   }
 }
