@@ -4,9 +4,9 @@ void toneSOS(){
   i++;
   /* Not a clever way to do task managing */
   /* BUT It works anyway */
-  if (i == 50 || i == 70 || i == 90 || i == 220 || i == 240 || i == 260)
+  if (i == 50 || i == 60 || i == 70 || i == 130 || i == 140 || i == 150)
   tone(7, 1000, 60);
-  if (i == 110 || i == 150 || i == 190)
+  if (i == 80 || i == 100 || i == 120)
   tone(7, 1000, 120);
   if (i > 260)
   i = 0;

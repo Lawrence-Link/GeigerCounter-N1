@@ -5,6 +5,7 @@
 */
 
 #define DEBUG
+
 #include "Batt.h"
 #include "buzz.h"
 #include "leds.h"
@@ -12,26 +13,43 @@
 #include "resources.h"
 #include <Wire.h>
 #include <U8g2lib.h>
-#include <TimerOne.h>
 #include <EEPROM.h>
+#include <TimerOne.h>
 
 bool IsRunning = true;
 enum {START, COUNT, SETTINGS, BRIGHTNESS, SOUND} menu = START;
-enum {SOS, ON, OFF} SoundEffect = SOS;
+enum {SOS, ON, OFF} SoundEffect;
 enum buttonReturnDef;
 enum {BRI_st, SOU_st} setaddr;
+
+unsigned long counts; //variable for GM Tube events
+unsigned long _previousMillis; //variable for measuring time
+float averageCPM;
+float sdCPM;
+int currentCPM;
+float calcCPM;
+float CPMArray[100];
+volatile float usvHr = NULL;
 
 U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
 void setup(void) {
+  counts = 0;
+  currentCPM = 0;
+  averageCPM = 0;
+  sdCPM = 0;
+  calcCPM = 0;
+  
   u8g2.begin();
   pinMode(2, INPUT_PULLUP);
+  batt_init();
   led_initialize();
   buttons_init();
   attachInterrupt(INT0, sensorISR, FALLING); //Detect pulse at the falling edge
-  Timer1.initialize(100000); //~0.1s
+  Timer1.initialize(30000000); //30s
   Timer1.attachInterrupt(ISR_Timer1);
   u8g2.setContrast(EEPROM.read(0));
+  SoundEffect = EEPROM.read(10);
 }
 /*
   #ifdef DEBUG
@@ -62,7 +80,7 @@ void drawTitle(char* title) {
   u8g2.drawStr(29, 9, title);
 }
 
-void drawUICounting(float endResult = NULL) { // When Counter works..
+void drawUICounting(float endResult) { // When Counter works..
   u8g2.setFont(u8g2_font_luBIS08_tf);
   u8g2.drawLine(0, 11, 127, 11); // Upper dividing line
   u8g2.drawLine(0, 53, 127, 53); // Lower dividing line
@@ -102,16 +120,23 @@ void drawUICounting(float endResult = NULL) { // When Counter works..
         break;
       }
   }
-  u8g2.setFont(u8g2_font_logisoso20_tr);
-  u8g2.setCursor(4, 41);
-  if (endResult == NULL) { // print endResult
-    u8g2.print("? --");
-  } else {
-    u8g2.print(endResult);
-  }
-
+ // u8g2.setFont(u8g2_font_logisoso20_tr);
+ // u8g2.setCursor(4, 41);
+ // print endResult
+    //u8g2.print(endResult);
+    char str[10];
+    if (IsRunning == true)
+    dtostrf(usvHr, 2, 2, str);
+    
+    u8g2.setFont(u8g2_font_logisoso20_tr);
+  u8g2.drawStr(1, 41, str);
+  
   u8g2.drawXBMP(0, 55, RAD_TYPE_WIDTH, RAD_TYPE_HEIGHT, Rad_Type); //draw β & γ icon
-  u8g2.drawXBMP(62, 21, uSvH_WIDTH, uSvH_HEIGHT, uSvH); //draw unit of μSv/h
+  if (isCharging() == true){
+    u8g2.setFont(u8g2_font_timB08_tf);
+    u8g2.drawStr(20, 55, "CHARGING");
+  }
+  u8g2.drawXBMP(65, 21, uSvH_WIDTH, uSvH_HEIGHT, uSvH); //draw unit of μSv/h
 }
 
 void drawSettings(int _curr) {
@@ -125,7 +150,24 @@ void drawSettings(int _curr) {
 }
 
 void ISR_Timer1() {
-
+  CPMArray[currentCPM] = counts * 2;
+  usvHr = outputSieverts(CPMArray[currentCPM]);
+  counts = 0;
+  averageCPM = 0;
+  sdCPM = 0;
+  if (usvHr < 0.2){
+    led_green(true);
+    led_red(false);
+    led_blue(false);
+  }else if (usvHr > 0.2 && usvHr < 2.5){
+    led_green(true);
+    led_red(true);
+    led_blue(false);
+  }else if (usvHr > 2.5){
+    led_green(false);
+    led_red(true);
+    led_blue(false);
+  }
 }
 
 bool hasTrigged = false;
@@ -144,8 +186,11 @@ void drawSoundSettings(int curr){
 
 void sensorISR() {
   hasTrigged = true;
+  counts++;
   //led_red(true); //turn red led on
+  if (SoundEffect == SOS || SoundEffect == ON)
   toneClick();
+  //toneSOS();
 }
 
 #define total_options 2 // How many items in the setting list (started from 1)
@@ -194,7 +239,13 @@ void loop(void) {
                 }
             }
           }
-          drawUICounting();
+          //noInterrupts();
+          drawUICounting(usvHr);
+          
+          if (usvHr > 2.5 && SoundEffect == SOS){
+            toneSOS();
+          }
+          //interrupts();
         } while (u8g2.nextPage());
         break;
       }
@@ -280,7 +331,7 @@ void loop(void) {
     case SOUND: { // Sound Effect
         u8g2.firstPage();
         do {
-          static int curr_sound = EEPROM.read(1);
+          static int curr_sound = EEPROM.read(10);
           drawTitle("SOUND");
           buttonReturnDef curr = refresh_button();
           if (curr != NONE) {
@@ -304,7 +355,8 @@ void loop(void) {
                   break;
                 }
               case MID_LONG : {
-                  EEPROM.write(1, curr_sound);
+                  EEPROM.write(10, curr_sound);
+                  SoundEffect = curr_sound;
                   menu = COUNT;
                   break;
                 }
@@ -314,4 +366,9 @@ void loop(void) {
         }while ( u8g2.nextPage() );
       }
   }
+}
+
+float outputSieverts(float x)  {
+  float y = x * 0.0057;
+  return y;
 }
