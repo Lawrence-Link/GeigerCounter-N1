@@ -4,7 +4,9 @@
     Geiger Counter N1
 */
 
-#define DEBUG
+//#define DEBUG
+
+#define BOARD_VER 1
 
 #include "Batt.h"
 #include "buzz.h"
@@ -39,14 +41,14 @@ void setup(void) {
   averageCPM = 0;
   sdCPM = 0;
   calcCPM = 0;
-  
+
   u8g2.begin();
   pinMode(2, INPUT_PULLUP);
   batt_init();
   led_initialize();
   buttons_init();
   attachInterrupt(INT0, sensorISR, FALLING); //Detect pulse at the falling edge
-  Timer1.initialize(30000000); //30s
+  Timer1.initialize(5000000); //30s
   Timer1.attachInterrupt(ISR_Timer1);
   u8g2.setContrast(EEPROM.read(0));
   SoundEffect = EEPROM.read(10);
@@ -120,21 +122,21 @@ void drawUICounting(float endResult) { // When Counter works..
         break;
       }
   }
- // u8g2.setFont(u8g2_font_logisoso20_tr);
- // u8g2.setCursor(4, 41);
- // print endResult
-    //u8g2.print(endResult);
-    char str[10];
-    if (IsRunning == true)
+  // u8g2.setFont(u8g2_font_logisoso20_tr);
+  // u8g2.setCursor(4, 41);
+  // print endResult
+  //u8g2.print(endResult);
+  char str[10];
+  if (IsRunning == true)
     dtostrf(usvHr, 2, 2, str);
-    
-    u8g2.setFont(u8g2_font_logisoso20_tr);
+
+  u8g2.setFont(u8g2_font_logisoso20_tr);
   u8g2.drawStr(1, 41, str);
-  
+
   u8g2.drawXBMP(0, 55, RAD_TYPE_WIDTH, RAD_TYPE_HEIGHT, Rad_Type); //draw β & γ icon
-  if (isCharging() == true){
+  if (isCharging() == true) {
     u8g2.setFont(u8g2_font_timB08_tf);
-    u8g2.drawStr(20, 55, "CHARGING");
+    u8g2.drawStr(46, 63, "CHARGING");
   }
   u8g2.drawXBMP(65, 21, uSvH_WIDTH, uSvH_HEIGHT, uSvH); //draw unit of μSv/h
 }
@@ -148,36 +150,41 @@ void drawSettings(int _curr) {
     case 1: u8g2.drawStr(17, 40, ">"); break;
   }
 }
+short tm1_counter = 0;
 
 void ISR_Timer1() {
-  CPMArray[currentCPM] = counts * 2;
-  usvHr = outputSieverts(CPMArray[currentCPM]);
-  counts = 0;
-  averageCPM = 0;
-  sdCPM = 0;
-  if (usvHr < 0.2){
-    led_green(true);
-    led_red(false);
-    led_blue(false);
-  }else if (usvHr > 0.2 && usvHr < 2.5){
-    led_green(true);
-    led_red(true);
-    led_blue(false);
-  }else if (usvHr > 2.5){
-    led_green(false);
-    led_red(true);
-    led_blue(false);
+  ++tm1_counter;
+  if (tm1_counter == 3) {
+    tm1_counter = 0;
+    CPMArray[currentCPM] = counts * 4;
+    usvHr = outputSieverts(CPMArray[currentCPM]);
+    counts = 0;
+    averageCPM = 0;
+    sdCPM = 0;
+    //toneClick();
+    if (usvHr < 1) {
+      led_green(true);
+      led_red(false);
+      led_blue(false);
+    } else if (usvHr > 0. && usvHr < 2.5) {
+      led_green(true);
+      led_red(true);
+      led_blue(false);
+    } else if (usvHr > 2.5) {
+      led_green(false);
+      led_red(true);
+      led_blue(false);
+    }
   }
 }
 
 bool hasTrigged = false;
-// volatile bool SOS = false;
 
-void drawSoundSettings(int curr){
+void drawSoundSettings(int curr) {
   u8g2.drawXBMP(12, 27, LARGE_SOS_WIDTH, LARGE_SOS_HEIGHT, LARGE_SOS);
   u8g2.drawXBMP(54, 27, LARGE_VOL_ON_WIDTH, LARGE_VOL_ON_HEIGHT, LARGE_VOL_ON);
   u8g2.drawXBMP(92, 27, LARGE_VOL_OFF_WIDTH, LARGE_VOL_OFF_HEIGHT, LARGE_VOL_OFF);
-  switch (curr){
+  switch (curr) {
     case 0: u8g2.drawFrame(9, 25, 33, 25); break;
     case 1: u8g2.drawFrame(47, 25, 33, 25); break;
     case 2: u8g2.drawFrame(89, 25, 33, 25); break;
@@ -189,7 +196,7 @@ void sensorISR() {
   counts++;
   //led_red(true); //turn red led on
   if (SoundEffect == SOS || SoundEffect == ON)
-  toneClick();
+    toneClick();
   //toneSOS();
 }
 
@@ -204,8 +211,8 @@ void drawBrightness(uint8_t BRIGHTNESS) {
   u8g2.drawBox(9, 41, BRIGHTNESS, 11);
   u8g2.drawStr(8, 59, "0");
   u8g2.drawStr(107, 59, "100");
-  u8g2.drawXBMP(BRIGHTNESS+7, 36, dn_arr_WIDTH, dn_arr_HEIGHT, dn_arr); // draw down arror which show the current selection
-  u8g2.setCursor(BRIGHTNESS+7, 33);
+  u8g2.drawXBMP(BRIGHTNESS + 7, 36, dn_arr_WIDTH, dn_arr_HEIGHT, dn_arr); // draw down arror which show the current selection
+  u8g2.setCursor(BRIGHTNESS + 7, 33);
   u8g2.print(BRIGHTNESS);
 }
 
@@ -241,8 +248,8 @@ void loop(void) {
           }
           //noInterrupts();
           drawUICounting(usvHr);
-          
-          if (usvHr > 2.5 && SoundEffect == SOS){
+
+          if (usvHr > 2.5 && SoundEffect == SOS) {
             toneSOS();
           }
           //interrupts();
@@ -306,12 +313,16 @@ void loop(void) {
               case UPPER : {
                   if (_brightness < 100) {
                     _brightness++;
+                  } else {
+                    _brightness = 0;
                   }
                   break;
                 }
               case LOWER : {
                   if (_brightness > 0) {
                     _brightness--;
+                  } else {
+                    _brightness = 100;
                   }
                   break;
                 }
@@ -327,7 +338,7 @@ void loop(void) {
         } while ( u8g2.nextPage() );
         break;
       }
-      
+
     case SOUND: { // Sound Effect
         u8g2.firstPage();
         do {
@@ -363,7 +374,7 @@ void loop(void) {
             }
           }
           drawSoundSettings(curr_sound);
-        }while ( u8g2.nextPage() );
+        } while ( u8g2.nextPage() );
       }
   }
 }
