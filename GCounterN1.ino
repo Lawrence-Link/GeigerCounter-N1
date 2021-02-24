@@ -31,6 +31,7 @@ float sdCPM;
 int currentCPM;
 float calcCPM;
 float CPMArray[100];
+
 volatile float usvHr = NULL;
 
 U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
@@ -82,13 +83,13 @@ void drawTitle(char* title) {
   u8g2.drawStr(29, 9, title);
 }
 
-void drawUICounting(float endResult) { // When Counter works..
+void drawUICounting( float endResult ) { // When Counter works..
   u8g2.setFont(u8g2_font_luBIS08_tf);
   u8g2.drawLine(0, 11, 127, 11); // Upper dividing line
-  u8g2.drawLine(0, 53, 127, 53); // Lower dividing line
+  u8g2.drawLine(0, 53, 60, 53); // Lower dividing line
   u8g2.drawStr(0, 9, "LPD");
   u8g2.drawLine(26, 0, 26, 11);
-
+  u8g2.drawLine(60, 53, 60, 63);
   // Batt-icon determine
   if (GetBatteryVolt() < 3.6) {
     u8g2.drawXBMP(29, 2, BATT_ERR_WIDTH, BATT_ERR_HEIGHT, BATT_ERR);
@@ -128,17 +129,22 @@ void drawUICounting(float endResult) { // When Counter works..
   //u8g2.print(endResult);
   char str[10];
   if (IsRunning == true)
-    dtostrf(usvHr, 2, 2, str);
+  dtostrf(usvHr, 2, 2, str);
 
   u8g2.setFont(u8g2_font_logisoso20_tr);
-  u8g2.drawStr(1, 41, str);
-
+  u8g2.drawStr(1, 41, str);  // draw answers (The reason that I don't use print function is that it can cause a weird bug, which influent buttons and the UI)
+  // if you have any idea how it was happened, please tell me =3
   u8g2.drawXBMP(0, 55, RAD_TYPE_WIDTH, RAD_TYPE_HEIGHT, Rad_Type); //draw β & γ icon
+  u8g2.setFont(u8g2_font_timB08_tf);
   if (isCharging() == true) {
-    u8g2.setFont(u8g2_font_timB08_tf);
-    u8g2.drawStr(46, 63, "CHARGING");
+    u8g2.drawStr(36, 63, "CHG");
   }
-  u8g2.drawXBMP(65, 21, uSvH_WIDTH, uSvH_HEIGHT, uSvH); //draw unit of μSv/h
+  char _str_avr_ans[10];
+  dtostrf(outputSieverts(averageCPM), 2, 2, _str_avr_ans);
+  u8g2.drawStr(76, 54, "AVG:");
+  u8g2.drawStr(76, 63, _str_avr_ans);
+  u8g2.drawStr(98, 63, "uSv/h");
+  u8g2.drawXBMP(65, 19, uSvH_WIDTH, uSvH_HEIGHT, uSvH); //draw unit of μSv/h
 }
 
 void drawSettings(int _curr) {
@@ -161,20 +167,18 @@ void ISR_Timer1() {
     counts = 0;
     averageCPM = 0;
     sdCPM = 0;
-    //toneClick();
-    if (usvHr < 1) {
-      led_green(true);
-      led_red(false);
-      led_blue(false);
-    } else if (usvHr > 0. && usvHr < 2.5) {
-      led_green(true);
-      led_red(true);
-      led_blue(false);
-    } else if (usvHr > 2.5) {
-      led_green(false);
-      led_red(true);
-      led_blue(false);
+
+    for (int x=0;x<currentCPM+1;x++)  {
+      averageCPM = averageCPM + CPMArray[x];
     }
+    averageCPM = averageCPM / (currentCPM + 1);
+    for (int x=0;x<currentCPM+1;x++)  {
+      sdCPM = sdCPM + sq(CPMArray[x] - averageCPM);
+    }
+    sdCPM = sqrt(sdCPM / currentCPM) / sqrt(currentCPM+1);
+
+    //Serial.println("Avg: " + String(averageCPM) + " +/- " + String(sdCPM) + "  ArrayVal: " + String(CPMArray[currentCPM]));
+    currentCPM = currentCPM + 1;
   }
 }
 
@@ -198,6 +202,14 @@ void sensorISR() {
   if (SoundEffect == SOS || SoundEffect == ON)
     toneClick();
   //toneSOS();
+
+  if (usvHr < 1) {
+      led_flash(LED_GREEN);
+    } else if (usvHr > 1.75 && usvHr < 2.5) {
+      led_flash(LED_YELLOW);
+    } else if (usvHr > 2.5) {
+      led_flash(LED_RED);
+    }
 }
 
 #define total_options 2 // How many items in the setting list (started from 1)

@@ -1,5 +1,5 @@
 #include <Arduino.h>
-
+#include "leds.h"
 void led_initialize(){
   pinMode(A0, OUTPUT);
   pinMode(A1, OUTPUT);
@@ -20,4 +20,39 @@ void led_red(bool state){
 
 void led_green(bool state){
   digitalWrite(A1, !state);
+}
+
+void led_flash(LED_WARN _buf){
+  switch (_buf){
+    case LED_GREEN : {
+      led_green(true);
+      led_red(false);
+      led_blue(false);
+      
+      led_green(false);
+      led_red(false);
+      led_blue(false);
+      break;
+    }
+    case LED_YELLOW : {
+      led_green(true);
+      led_red(true);
+      led_blue(false);
+      
+      led_green(false);
+      led_red(false);
+      led_blue(false);
+      break;
+    }
+    case LED_RED : {
+      led_green(false);
+      led_red(true);
+      led_blue(false);
+      
+      led_green(false);
+      led_red(false);
+      led_blue(false);
+      break;
+    }
+  }
 }
