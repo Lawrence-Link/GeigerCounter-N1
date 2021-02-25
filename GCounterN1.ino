@@ -2,9 +2,9 @@
     All rights reserved
     ©LPD Lawrence Link 2021
     Geiger Counter N1
+    -------CONTACT AT-------
+    Lawrence-Link@outlook.com
 */
-
-//#define DEBUG
 
 #define BOARD_VER 1
 
@@ -17,46 +17,43 @@
 #include <U8g2lib.h>
 #include <EEPROM.h>
 #include <TimerOne.h>
-#include <avr/wdt.h>
+#include <avr/wdt.h>  // AVR-GCC lib to enable the Watchdog Timer
 
+/* Global variants' defination */
 bool IsRunning = true;
 enum {START, COUNT, SETTINGS, BRIGHTNESS, SOUND} menu = START;
 enum {SOS, ON, OFF} SoundEffect;
 enum buttonReturnDef;
-enum {BRI_st, SOU_st} setaddr;
+enum {addrBRI = 0, addrSOUND = 10};
 
-unsigned long counts; //variable for GM Tube events
-unsigned long _previousMillis; //variable for measuring time
-float averageCPM;
-float sdCPM;
-int currentCPM;
-float calcCPM;
+unsigned long counts = 0; //variable for GM Tube events, +1 when every pulse occur
+float averageCPM = 0; // average count per minutes.
+int currentCPM = 0;
+float calcCPM = 0;
 float CPMArray[100];
 
+volatile short tm1_counter = 0;
 volatile float usvHr = NULL;
 
 U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
 void setup(void) {
-  counts = 0;
-  currentCPM = 0;
-  averageCPM = 0;
-  sdCPM = 0;
-  calcCPM = 0;
-
   u8g2.begin();
-  pinMode(2, INPUT_PULLUP);
+  pinMode(2, INPUT_PULLUP); // pin 2(INT0) PULLUP
+  
   batt_init();
   led_initialize();
   buttons_init();
+  
   attachInterrupt(INT0, sensorISR, FALLING); //Detect pulse at the falling edge
-  Timer1.initialize(5000000); //5s
+  Timer1.initialize(1000000); //1s
   Timer1.attachInterrupt(ISR_Timer1);
   u8g2.setContrast(EEPROM.read(0));
   SoundEffect = EEPROM.read(10);
 
-  wdt_enable(WDTO_2S);
+  wdt_enable(WDTO_2S); // ENABLE WATCHDOG TIMER, NEEDED TO BE FED EVERY 2 SECONDS.
 }
+
 /*
   #ifdef DEBUG
         static bool led_debug = false;
@@ -64,6 +61,7 @@ void setup(void) {
         led_red(led_debug);
   #endif
 */
+
 /* * * * * * * * * * * * * * * * * * The UI initially I i thought was
    LPD |■■■ | 70%        RUNNING  * something like this. Logo up left
  *                                 * and battery usage followed. It
@@ -89,27 +87,27 @@ void drawTitle(char* title) {
 void drawUICounting( float endResult ) { // When Counter works..
   u8g2.setFont(u8g2_font_luBIS08_tf);
   u8g2.drawLine(0, 11, 127, 11); // Upper dividing line
-  u8g2.drawLine(0, 53, 60, 53); // Lower dividing line
-  u8g2.drawStr(0, 9, "LPD");
+  u8g2.drawStr(0, 10, "LPD");
+  u8g2.drawLine(0, 0, 127, 0);
   u8g2.drawLine(26, 0, 26, 11);
-  u8g2.drawLine(60, 53, 60, 63);
+  u8g2.drawLine(44, 0, 44, 11);
+  u8g2.drawLine(44, 0, 44, 11);
+  
   // Batt-icon determine
   if (GetBatteryVolt() < 3.6) {
-    u8g2.drawXBMP(29, 2, BATT_ERR_WIDTH, BATT_ERR_HEIGHT, BATT_ERR);
+    u8g2.drawXBMP(29, 4, BATT_ERR_WIDTH, BATT_ERR_HEIGHT, BATT_ERR);
   } else if (GetBatteryVolt() < 3.8) {
-    u8g2.drawXBMP(29, 2, BATT_25_WIDTH, BATT_25_HEIGHT, BATT_25);
+    u8g2.drawXBMP(29, 4, BATT_25_WIDTH, BATT_25_HEIGHT, BATT_25);
   } else if (GetBatteryVolt() < 3.9) {
-    u8g2.drawXBMP(29, 2, BATT_75_WIDTH, BATT_75_HEIGHT, BATT_75);
+    u8g2.drawXBMP(29, 4, BATT_75_WIDTH, BATT_75_HEIGHT, BATT_75);
   } else if (GetBatteryVolt() >= 3.9) {
-    u8g2.drawXBMP(29, 2, BATT_100_WIDTH, BATT_100_HEIGHT, BATT_100);
+    u8g2.drawXBMP(29, 4, BATT_100_WIDTH, BATT_100_HEIGHT, BATT_100);
   }
-
+    u8g2.setFont(u8g2_font_timB08_tf);
   if (IsRunning == true) { // Showing running state
-    u8g2.setFont(u8g2_font_timB08_tf);
-    u8g2.drawStr(75, 9, "RUNNING");
+    u8g2.drawStr(75, 10, "RUNNING");
   } else {
-    u8g2.setFont(u8g2_font_timB08_tf);
-    u8g2.drawStr(75, 9, "STOPPED");
+    u8g2.drawStr(75, 10, "STOPPED");
   }
 
   switch (SoundEffect) { // Show sound effect of current
@@ -130,24 +128,36 @@ void drawUICounting( float endResult ) { // When Counter works..
   // u8g2.setCursor(4, 41);
   // print endResult
   //u8g2.print(endResult);
-  char str[10];
+  char _str_ans[10];
   if (IsRunning == true)
-    dtostrf(usvHr, 2, 2, str);
+    dtostrf(usvHr, 2, 2, _str_ans);
 
   u8g2.setFont(u8g2_font_logisoso20_tr);
-  u8g2.drawStr(1, 41, str);  // draw answers (The reason that I don't use print function is that it can cause a weird bug, which influent buttons and the UI)
+  u8g2.drawStr(1, 41, _str_ans);  // draw answers (The reason that I don't use print function is that it can cause a weird bug, which influent buttons and the UI)
   // if you have any idea how it was happened, please tell me =3
+  u8g2.drawXBMP(65, 19, uSvH_WIDTH, uSvH_HEIGHT, uSvH); //draw unit of μSv/h
   u8g2.drawXBMP(0, 55, RAD_TYPE_WIDTH, RAD_TYPE_HEIGHT, Rad_Type); //draw β & γ icon
+  
   u8g2.setFont(u8g2_font_timB08_tf);
-  if (isCharging() == true) {
+  if (isCharging() == true) { // if is charging, then draw 
     u8g2.drawStr(36, 63, "CHG");
+    u8g2.drawLine(0, 53, 60, 53); // Lower dividing line
+    u8g2.drawLine(60, 53, 60, 63);
+  } else {
+    u8g2.drawLine(0, 53, 33, 53); // Lower dividing line
+    u8g2.drawLine(33, 53, 33, 63);
   }
-  char _str_avr_ans[10];
+  
+  char _str_timing_buffer[5];
+  sprintf(_str_timing_buffer, "..%d", 15-tm1_counter);
+  u8g2.drawStr(53, 10, _str_timing_buffer); // Timing left
+  
+  char _str_avr_ans[10]; 
   dtostrf(outputSieverts(averageCPM), 2, 2, _str_avr_ans);
+  
   u8g2.drawStr(76, 54, "AVG:");
   u8g2.drawStr(76, 63, _str_avr_ans);
   u8g2.drawStr(98, 63, "uSv/h");
-  u8g2.drawXBMP(65, 19, uSvH_WIDTH, uSvH_HEIGHT, uSvH); //draw unit of μSv/h
 }
 
 void drawSettings(int _curr) {
@@ -159,28 +169,21 @@ void drawSettings(int _curr) {
     case 1: u8g2.drawStr(17, 40, ">"); break;
   }
 }
-short tm1_counter = 0;
 
-void ISR_Timer1() {
+void ISR_Timer1() { /* a interrupt event happens every 1s */
   ++tm1_counter;
-  if (tm1_counter == 3) {
+  if (tm1_counter == 15) {
     tm1_counter = 0;
     CPMArray[currentCPM] = counts * 4;
     usvHr = outputSieverts(CPMArray[currentCPM]);
+    
     counts = 0;
     averageCPM = 0;
-    sdCPM = 0;
-
+    
     for (int x = 0; x < currentCPM + 1; x++)  {
       averageCPM = averageCPM + CPMArray[x];
     }
     averageCPM = averageCPM / (currentCPM + 1);
-    for (int x = 0; x < currentCPM + 1; x++)  {
-      sdCPM = sdCPM + sq(CPMArray[x] - averageCPM);
-    }
-    sdCPM = sqrt(sdCPM / currentCPM) / sqrt(currentCPM + 1);
-
-    //Serial.println("Avg: " + String(averageCPM) + " +/- " + String(sdCPM) + "  ArrayVal: " + String(CPMArray[currentCPM]));
     currentCPM = currentCPM + 1;
   }
 }
@@ -222,10 +225,10 @@ extern bool longPressActive;
 
 void drawBrightness(uint8_t BRIGHTNESS) {
   u8g2.setFont(u8g2_font_profont10_tr);
-  u8g2.drawFrame(9, 41, 110, 11);
+  u8g2.drawFrame(9, 41, 100, 11);
   u8g2.drawBox(9, 41, BRIGHTNESS, 11);
   u8g2.drawStr(8, 59, "0");
-  u8g2.drawStr(107, 59, "100");
+  u8g2.drawStr(97, 59, "100");
   u8g2.drawXBMP(BRIGHTNESS + 7, 36, dn_arr_WIDTH, dn_arr_HEIGHT, dn_arr); // draw down arror which show the current selection
   u8g2.setCursor(BRIGHTNESS + 7, 33);
   u8g2.print(BRIGHTNESS);
@@ -320,7 +323,7 @@ void loop(void) {
 
     case BRIGHTNESS: { // Brightness Adjusting
         u8g2.firstPage();
-        static uint8_t _brightness = EEPROM.read(0);
+        static uint8_t _brightness = EEPROM.read(addrBRI);
         do {
           drawTitle( "BRIGHTNESS" );
           buttonReturnDef curr = refresh_button();
@@ -343,7 +346,7 @@ void loop(void) {
                   break;
                 }
               case MID_LONG : {
-                  EEPROM.write(0, _brightness);
+                  EEPROM.write(addrBRI, _brightness);
                   menu = COUNT;
                   break;
                 }
@@ -358,7 +361,7 @@ void loop(void) {
     case SOUND: { // Sound Effect
         u8g2.firstPage();
         do {
-          static int curr_sound = EEPROM.read(10);
+          static int curr_sound = EEPROM.read(addrSOUND);
           drawTitle("SOUND");
           buttonReturnDef curr = refresh_button();
           if (curr != NONE) {
@@ -382,7 +385,7 @@ void loop(void) {
                   break;
                 }
               case MID_LONG : {
-                  EEPROM.write(10, curr_sound);
+                  EEPROM.write(addrSOUND, curr_sound);
                   SoundEffect = curr_sound;
                   menu = COUNT;
                   break;
