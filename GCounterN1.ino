@@ -203,7 +203,7 @@ void sensorISR() {
     toneClick();
   //toneSOS();
 
-  if (usvHr < 1) {
+  if (usvHr < 1.75) {
       led_flash(LED_GREEN);
     } else if (usvHr > 1.75 && usvHr < 2.5) {
       led_flash(LED_YELLOW);
