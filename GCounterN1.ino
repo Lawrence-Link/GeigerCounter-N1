@@ -17,6 +17,7 @@
 #include <U8g2lib.h>
 #include <EEPROM.h>
 #include <TimerOne.h>
+#include <avr/wdt.h>
 
 bool IsRunning = true;
 enum {START, COUNT, SETTINGS, BRIGHTNESS, SOUND} menu = START;
@@ -49,10 +50,12 @@ void setup(void) {
   led_initialize();
   buttons_init();
   attachInterrupt(INT0, sensorISR, FALLING); //Detect pulse at the falling edge
-  Timer1.initialize(5000000); //30s
+  Timer1.initialize(5000000); //5s
   Timer1.attachInterrupt(ISR_Timer1);
   u8g2.setContrast(EEPROM.read(0));
   SoundEffect = EEPROM.read(10);
+
+  wdt_enable(WDTO_2S);
 }
 /*
   #ifdef DEBUG
@@ -129,7 +132,7 @@ void drawUICounting( float endResult ) { // When Counter works..
   //u8g2.print(endResult);
   char str[10];
   if (IsRunning == true)
-  dtostrf(usvHr, 2, 2, str);
+    dtostrf(usvHr, 2, 2, str);
 
   u8g2.setFont(u8g2_font_logisoso20_tr);
   u8g2.drawStr(1, 41, str);  // draw answers (The reason that I don't use print function is that it can cause a weird bug, which influent buttons and the UI)
@@ -168,14 +171,14 @@ void ISR_Timer1() {
     averageCPM = 0;
     sdCPM = 0;
 
-    for (int x=0;x<currentCPM+1;x++)  {
+    for (int x = 0; x < currentCPM + 1; x++)  {
       averageCPM = averageCPM + CPMArray[x];
     }
     averageCPM = averageCPM / (currentCPM + 1);
-    for (int x=0;x<currentCPM+1;x++)  {
+    for (int x = 0; x < currentCPM + 1; x++)  {
       sdCPM = sdCPM + sq(CPMArray[x] - averageCPM);
     }
-    sdCPM = sqrt(sdCPM / currentCPM) / sqrt(currentCPM+1);
+    sdCPM = sqrt(sdCPM / currentCPM) / sqrt(currentCPM + 1);
 
     //Serial.println("Avg: " + String(averageCPM) + " +/- " + String(sdCPM) + "  ArrayVal: " + String(CPMArray[currentCPM]));
     currentCPM = currentCPM + 1;
@@ -204,12 +207,12 @@ void sensorISR() {
   //toneSOS();
 
   if (usvHr < 1.75) {
-      led_flash(LED_GREEN);
-    } else if (usvHr > 1.75 && usvHr < 2.5) {
-      led_flash(LED_YELLOW);
-    } else if (usvHr > 2.5) {
-      led_flash(LED_RED);
-    }
+    led_flash(LED_GREEN);
+  } else if (usvHr > 1.75 && usvHr < 2.5) {
+    led_flash(LED_YELLOW);
+  } else if (usvHr > 2.5) {
+    led_flash(LED_RED);
+  }
 }
 
 #define total_options 2 // How many items in the setting list (started from 1)
@@ -229,6 +232,7 @@ void drawBrightness(uint8_t BRIGHTNESS) {
 }
 
 void loop(void) {
+  wdt_reset();
   switch (menu) {
     case START: { // Start
         u8g2.firstPage();
