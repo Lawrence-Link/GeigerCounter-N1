@@ -1,20 +1,75 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "PlatformIO",
             "includePath": [
-                "${workspaceFolder}/**"
+                "C:/Users/LAW/Documents/PlatformIO/Projects/GeigerCounter/include",
+                "C:/Users/LAW/Documents/PlatformIO/Projects/GeigerCounter/src",
+                "C:/Users/LAW/Documents/Arduino/libraries/U8g2/src",
+                "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/Wire/src",
+                "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/SPI/src",
+                "C:/Users/LAW/Documents/Arduino/libraries/TimerOne",
+                "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/EEPROM/src",
+                "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/cores/MiniCore",
+                "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/variants/standard",
+                "C:/Users/LAW/Documents/Arduino/libraries/Adafruit_BusIO",
+                "C:/Users/LAW/Documents/Arduino/libraries/Adafruit_GFX_Library",
+                "C:/Users/LAW/Documents/Arduino/libraries/Adafruit_SSD1306",
+                "C:/Users/LAW/Documents/Arduino/libraries/SoftPWM",
+                "C:/Users/LAW/Documents/Arduino/libraries/msTask/src",
+                "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/AVR_examples/src",
+                "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/Optiboot_flasher/src",
+                "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/SPI1/src",
+                "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/SoftwareSerial/src",
+                "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/Wire1/src",
+                ""
             ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "C:/Users/LAW/Documents/PlatformIO/Projects/GeigerCounter/include",
+                    "C:/Users/LAW/Documents/PlatformIO/Projects/GeigerCounter/src",
+                    "C:/Users/LAW/Documents/Arduino/libraries/U8g2/src",
+                    "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/Wire/src",
+                    "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/SPI/src",
+                    "C:/Users/LAW/Documents/Arduino/libraries/TimerOne",
+                    "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/EEPROM/src",
+                    "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/cores/MiniCore",
+                    "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/variants/standard",
+                    "C:/Users/LAW/Documents/Arduino/libraries/Adafruit_BusIO",
+                    "C:/Users/LAW/Documents/Arduino/libraries/Adafruit_GFX_Library",
+                    "C:/Users/LAW/Documents/Arduino/libraries/Adafruit_SSD1306",
+                    "C:/Users/LAW/Documents/Arduino/libraries/SoftPWM",
+                    "C:/Users/LAW/Documents/Arduino/libraries/msTask/src",
+                    "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/AVR_examples/src",
+                    "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/Optiboot_flasher/src",
+                    "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/SPI1/src",
+                    "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/SoftwareSerial/src",
+                    "C:/Users/LAW/.platformio/packages/framework-arduino-avr-minicore/libraries/Wire1/src",
+                    ""
+                ]
+            },
             "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
+                "PLATFORMIO=50100",
+                "ARDUINO_AVR_ATmega328P",
+                "F_CPU=16000000L",
+                "ARDUINO_ARCH_AVR",
+                "ARDUINO=10808",
+                "__AVR_ATmega328P__",
+                ""
             ],
-            "windowsSdkVersion": "10.0.18362.0",
-            "compilerPath": "D:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe",
-            "cStandard": "c17",
-            "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x64"
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "compilerPath": "C:/Users/LAW/.platformio/packages/toolchain-atmelavr/bin/avr-gcc.exe",
+            "compilerArgs": [
+                "-mmcu=atmega328p",
+                ""
+            ]
         }
     ],
     "version": 4
