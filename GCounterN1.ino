@@ -4,6 +4,7 @@
     Geiger Counter N1
     -------CONTACT AT-------
     Lawrence-Link@outlook.com
+    Project license under 
 */
 
 #define BOARD_VER 1
@@ -40,11 +41,11 @@ U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 void setup(void) {
   u8g2.begin();
   pinMode(2, INPUT_PULLUP); // pin 2(INT0) PULLUP
-  
+
   batt_init();
   led_initialize();
   buttons_init();
-  
+
   attachInterrupt(INT0, sensorISR, FALLING); //Detect pulse at the falling edge
   Timer1.initialize(1000000); //1s
   Timer1.attachInterrupt(ISR_Timer1);
@@ -80,7 +81,7 @@ void drawTitle(char* title) {
   u8g2.drawStr(0, 9, "LPD");
   u8g2.drawLine(0, 11, 127, 11); // Upper dividing line
   u8g2.drawLine(26, 0, 26, 11);  // dividing line between 'LPD' & others
-  u8g2.setFont(u8g2_font_sirclivethebold_tr);
+  u8g2.setFont(u8g2_font_saikyosansbold8_8u);
   u8g2.drawStr(29, 9, title);
 }
 
@@ -92,7 +93,7 @@ void drawUICounting( float endResult ) { // When Counter works..
   u8g2.drawLine(26, 0, 26, 11);
   u8g2.drawLine(44, 0, 44, 11);
   u8g2.drawLine(44, 0, 44, 11);
-  
+
   // Batt-icon determine
   if (GetBatteryVolt() < 3.6) {
     u8g2.drawXBMP(29, 4, BATT_ERR_WIDTH, BATT_ERR_HEIGHT, BATT_ERR);
@@ -103,12 +104,33 @@ void drawUICounting( float endResult ) { // When Counter works..
   } else if (GetBatteryVolt() >= 3.9) {
     u8g2.drawXBMP(29, 4, BATT_100_WIDTH, BATT_100_HEIGHT, BATT_100);
   }
-    u8g2.setFont(u8g2_font_timB08_tf);
+  u8g2.setFont(u8g2_font_timB08_tf);
+  char _str_ans[10];
+  char _str_avr_ans[10];
   if (IsRunning == true) { // Showing running state
     u8g2.drawStr(75, 10, "RUNNING");
+    dtostrf(usvHr, 2, 2, _str_ans);
+    dtostrf(outputSieverts(averageCPM), 2, 2, _str_avr_ans);
   } else {
     u8g2.drawStr(75, 10, "STOPPED");
   }
+
+  if (isCharging() == true) { // if is charging, then draw
+    u8g2.drawStr(36, 63, "CHG");
+    u8g2.drawLine(0, 53, 60, 53); // Lower dividing line
+    u8g2.drawLine(60, 53, 60, 63);
+  } else {
+    u8g2.drawLine(0, 53, 33, 53); // Lower dividing line
+    u8g2.drawLine(33, 53, 33, 63);
+  }
+
+  char _str_timing_buffer[5];
+  sprintf(_str_timing_buffer, "..%d", 15 - tm1_counter);
+  
+  u8g2.drawStr(53, 10, _str_timing_buffer); // Timing left
+  u8g2.drawStr(76, 54, "AVG:");
+  u8g2.drawStr(76, 63, _str_avr_ans);
+  u8g2.drawStr(98, 63, "uSv/h");
 
   switch (SoundEffect) { // Show sound effect of current
     case SOS: {
@@ -128,45 +150,22 @@ void drawUICounting( float endResult ) { // When Counter works..
   // u8g2.setCursor(4, 41);
   // print endResult
   //u8g2.print(endResult);
-  char _str_ans[10];
-  if (IsRunning == true)
-    dtostrf(usvHr, 2, 2, _str_ans);
 
   u8g2.setFont(u8g2_font_logisoso20_tr);
   u8g2.drawStr(1, 41, _str_ans);  // draw answers (The reason that I don't use print function is that it can cause a weird bug, which influent buttons and the UI)
   // if you have any idea how it was happened, please tell me =3
   u8g2.drawXBMP(65, 19, uSvH_WIDTH, uSvH_HEIGHT, uSvH); //draw unit of μSv/h
   u8g2.drawXBMP(0, 55, RAD_TYPE_WIDTH, RAD_TYPE_HEIGHT, Rad_Type); //draw β & γ icon
-  
-  u8g2.setFont(u8g2_font_timB08_tf);
-  if (isCharging() == true) { // if is charging, then draw 
-    u8g2.drawStr(36, 63, "CHG");
-    u8g2.drawLine(0, 53, 60, 53); // Lower dividing line
-    u8g2.drawLine(60, 53, 60, 63);
-  } else {
-    u8g2.drawLine(0, 53, 33, 53); // Lower dividing line
-    u8g2.drawLine(33, 53, 33, 63);
-  }
-  
-  char _str_timing_buffer[5];
-  sprintf(_str_timing_buffer, "..%d", 15-tm1_counter);
-  u8g2.drawStr(53, 10, _str_timing_buffer); // Timing left
-  
-  char _str_avr_ans[10]; 
-  dtostrf(outputSieverts(averageCPM), 2, 2, _str_avr_ans);
-  
-  u8g2.drawStr(76, 54, "AVG:");
-  u8g2.drawStr(76, 63, _str_avr_ans);
-  u8g2.drawStr(98, 63, "uSv/h");
 }
 
 void drawSettings(int _curr) {
-  u8g2.setFont(u8g2_font_t0_13b_mf);
-  u8g2.drawStr(28, 26, "Brightness");
-  u8g2.drawStr(28, 40, "Sound");
+  u8g2.setFont(u8g2_font_saikyosansbold8_8u);
+  u8g2.drawStr(28, 26, "BRIGHTNESS");
+  u8g2.drawStr(28, 40, "SOUND");
   switch (_curr) {
     case 0: u8g2.drawStr(17, 26, ">"); break;
     case 1: u8g2.drawStr(17, 40, ">"); break;
+    //case 2: u8g2.drawFrame(); break;  //delta 
   }
 }
 
@@ -176,30 +175,25 @@ void ISR_Timer1() { /* a interrupt event happens every 1s */
     tm1_counter = 0;
     CPMArray[currentCPM] = counts * 4;
     usvHr = outputSieverts(CPMArray[currentCPM]);
-    
+
     counts = 0;
     averageCPM = 0;
-    
-    for (int x = 0; x < currentCPM + 1; x++)  {
+
+    for (int x = 0; x < currentCPM + 1; x++)  { // Take average result from each data in the array
       averageCPM = averageCPM + CPMArray[x];
     }
+    
     averageCPM = averageCPM / (currentCPM + 1);
-    currentCPM = currentCPM + 1;
+    
+    if (currentCPM < 100) { // the array has 100 elements
+      currentCPM = currentCPM + 1; // move cursor to the next element
+    } else {
+      currentCPM = 0;
+    }
   }
 }
 
-bool hasTrigged = false;
-
-void drawSoundSettings(int curr) {
-  u8g2.drawXBMP(12, 27, LARGE_SOS_WIDTH, LARGE_SOS_HEIGHT, LARGE_SOS);
-  u8g2.drawXBMP(54, 27, LARGE_VOL_ON_WIDTH, LARGE_VOL_ON_HEIGHT, LARGE_VOL_ON);
-  u8g2.drawXBMP(92, 27, LARGE_VOL_OFF_WIDTH, LARGE_VOL_OFF_HEIGHT, LARGE_VOL_OFF);
-  switch (curr) {
-    case 0: u8g2.drawFrame(9, 25, 33, 25); break;
-    case 1: u8g2.drawFrame(47, 25, 33, 25); break;
-    case 2: u8g2.drawFrame(89, 25, 33, 25); break;
-  }
-}
+bool hasTrigged = false; // turn to true when the first pulse occured, then display the counting screen
 
 void sensorISR() {
   hasTrigged = true;
@@ -224,7 +218,7 @@ extern bool buttonActiveOK;
 extern bool longPressActive;
 
 void drawBrightness(uint8_t BRIGHTNESS) {
-  u8g2.setFont(u8g2_font_profont10_tr);
+  u8g2.setFont(u8g2_font_timB08_tf);
   u8g2.drawFrame(9, 41, 100, 11);
   u8g2.drawBox(9, 41, BRIGHTNESS, 11);
   u8g2.drawStr(8, 59, "0");
@@ -232,6 +226,17 @@ void drawBrightness(uint8_t BRIGHTNESS) {
   u8g2.drawXBMP(BRIGHTNESS + 7, 36, dn_arr_WIDTH, dn_arr_HEIGHT, dn_arr); // draw down arror which show the current selection
   u8g2.setCursor(BRIGHTNESS + 7, 33);
   u8g2.print(BRIGHTNESS);
+}
+
+void drawSoundSettings(int curr) {
+  u8g2.drawXBMP(12, 27, LARGE_SOS_WIDTH, LARGE_SOS_HEIGHT, LARGE_SOS);
+  u8g2.drawXBMP(54, 27, LARGE_VOL_ON_WIDTH, LARGE_VOL_ON_HEIGHT, LARGE_VOL_ON);
+  u8g2.drawXBMP(92, 27, LARGE_VOL_OFF_WIDTH, LARGE_VOL_OFF_HEIGHT, LARGE_VOL_OFF);
+  switch (curr) {
+    case 0: u8g2.drawFrame(9, 25, 33, 25); break;
+    case 1: u8g2.drawFrame(47, 25, 33, 25); break;
+    case 2: u8g2.drawFrame(89, 25, 33, 25); break;
+  }
 }
 
 void loop(void) {
@@ -280,7 +285,7 @@ void loop(void) {
         static int curr_sett = 0; //0 - brightness 1 - sound, started from zero
         u8g2.firstPage();
         do {
-          drawTitle("Settings");
+          drawTitle( "SETTINGS" );
           drawSettings(curr_sett);
 
           buttonReturnDef curr = refresh_button();
