@@ -1,0 +1,4 @@
+#define 1614346767667_width 8
+#define 1614346767667_height 6
+static char 1614346767667_bits[] = {
+  0x80, 0xC0, 0x60, 0x33, 0x1E, 0x0C, };

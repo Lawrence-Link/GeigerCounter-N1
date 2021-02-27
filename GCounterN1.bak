@@ -1,14 +1,13 @@
 /*
-    ©LPD Lawrence Link 2021
     All rights reserved
+    ©LPD Lawrence Link 2021
     Geiger Counter N1
     -------CONTACT AT-------
     Lawrence-Link@outlook.com
+    Project license under 
 */
 
 #define BOARD_VER 1
-
-#include <Arduino.h>
 
 #include "Batt.h"
 #include "buzz.h"
@@ -21,28 +20,21 @@
 #include <TimerOne.h>
 #include <avr/wdt.h>  // AVR-GCC lib to enable the Watchdog Timer
 
-/* Global variants' definations */
+/* Global variants' defination */
 bool IsRunning = true;
-bool IsRELModeOn = false;
-enum menuSTG{START, COUNT, SETTINGS, BRIGHTNESS, SOUND} menu;
-enum soundfx{SOS, ON, OFF} SoundEffect;
+enum {START, COUNT, SETTINGS, BRIGHTNESS, SOUND} menu = START;
+enum {SOS, ON, OFF} SoundEffect;
 enum buttonReturnDef;
 enum {addrBRI = 0, addrSOUND = 10};
-
-/* declarations */
-float outputSieverts(float x);
-void sensorISR();
-void ISR_Timer1();
 
 unsigned long counts = 0; //variable for GM Tube events, +1 when every pulse occur
 float averageCPM = 0; // average count per minutes.
 int currentCPM = 0;
 float calcCPM = 0;
 float CPMArray[100];
-float REF_REFERENCE = 0;
 
 volatile short tm1_counter = 0;
-volatile float usvHr = 0;
+volatile float usvHr = NULL;
 
 U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
@@ -53,12 +45,12 @@ void setup(void) {
   batt_init();
   led_initialize();
   buttons_init();
-  menu = START;
+
   attachInterrupt(INT0, sensorISR, FALLING); //Detect pulse at the falling edge
   Timer1.initialize(1000000); //1s
   Timer1.attachInterrupt(ISR_Timer1);
   u8g2.setContrast(EEPROM.read(0));
-  SoundEffect = soundfx(EEPROM.read(10));
+  SoundEffect = EEPROM.read(10);
 
   wdt_enable(WDTO_2S); // ENABLE WATCHDOG TIMER, NEEDED TO BE FED EVERY 2 SECONDS.
 }
@@ -115,20 +107,15 @@ void drawUICounting( float endResult ) { // When Counter works..
   u8g2.setFont(u8g2_font_timB08_tf);
   char _str_ans[10];
   char _str_avr_ans[10];
-  
   if (IsRunning == true) { // Showing running state
     u8g2.drawStr(75, 10, "RUNNING");
-    if (IsRELModeOn){
-      dtostrf(usvHr - REF_REFERENCE, 2, 2, _str_ans);
-    } else {
-      dtostrf(usvHr, 2, 2, _str_ans);
-    }
+    dtostrf(usvHr, 2, 2, _str_ans);
     dtostrf(outputSieverts(averageCPM), 2, 2, _str_avr_ans);
   } else {
-    u8g2.drawStr(75, 10, " PAUSED");
+    u8g2.drawStr(75, 10, "STOPPED");
   }
 
-  if (isCharging()) { // if is charging, then draw
+  if (isCharging() == true) { // if is charging, then draw
     u8g2.drawStr(36, 63, "CHG");
     u8g2.drawLine(0, 53, 60, 53); // Lower dividing line
     u8g2.drawLine(60, 53, 60, 63);
@@ -137,22 +124,13 @@ void drawUICounting( float endResult ) { // When Counter works..
     u8g2.drawLine(33, 53, 33, 63);
   }
 
-  char _str_timing_buffer[5]; // ..xx[\a]
+  char _str_timing_buffer[5];
   sprintf(_str_timing_buffer, "..%d", 15 - tm1_counter);
+  
   u8g2.drawStr(53, 10, _str_timing_buffer); // Timing left
-
-  if (IsRELModeOn){
-    u8g2.drawStr(80, 55, "REL:REF:");
-    u8g2.drawXBMP(63, 49, DELTA_WIDTH, DELTA_HEIGHT, DELTA_SIGN);
-    char _str_REF_buffer[6];
-    dtostrf(REF_REFERENCE, 2, 2, _str_REF_buffer);
-    u8g2.drawStr(79, 63, _str_REF_buffer);
-    //u8g2.drawStr(90, 80, "");
-  } else {
-  u8g2.drawStr(80, 54, "AVG:");
-  u8g2.drawStr(80, 63, _str_avr_ans);
-  }
-  u8g2.drawStr(104, 63, "uSv/h");
+  u8g2.drawStr(76, 54, "AVG:");
+  u8g2.drawStr(76, 63, _str_avr_ans);
+  u8g2.drawStr(98, 63, "uSv/h");
 
   switch (SoundEffect) { // Show sound effect of current
     case SOS: {
@@ -184,15 +162,9 @@ void drawSettings(int _curr) {
   u8g2.setFont(u8g2_font_saikyosansbold8_8u);
   u8g2.drawStr(28, 26, "BRIGHTNESS");
   u8g2.drawStr(28, 40, "SOUND");
-  u8g2.drawXBMP(0, 48, DELTA_WIDTH, DELTA_HEIGHT, DELTA_SIGN);
-  u8g2.drawStr(14, 58, "REL");
-  if (IsRELModeOn){
-    u8g2.drawXBMP(37, 51, CHECK_SIGN_WIDTH, CHECK_SIGN_HEIGHT, CHECK_SIGN);
-  }
   switch (_curr) {
     case 0: u8g2.drawStr(17, 26, ">"); break;
     case 1: u8g2.drawStr(17, 40, ">"); break;
-    case 2: u8g2.drawFrame(0, 47, 48, 16); break;
     //case 2: u8g2.drawFrame(); break;  //delta 
   }
 }
@@ -240,7 +212,7 @@ void sensorISR() {
   }
 }
 
-#define setting_total_options 3 // How many items in the setting list (started from 1)
+#define total_options 2 // How many items in the setting list (started from 1)
 
 extern bool buttonActiveOK;
 extern bool longPressActive;
@@ -249,8 +221,8 @@ void drawBrightness(uint8_t BRIGHTNESS) {
   u8g2.setFont(u8g2_font_timB08_tf);
   u8g2.drawFrame(9, 41, 100, 11);
   u8g2.drawBox(9, 41, BRIGHTNESS, 11);
-  u8g2.drawStr(8, 61, "0");
-  u8g2.drawStr(97, 61, "100");
+  u8g2.drawStr(8, 59, "0");
+  u8g2.drawStr(97, 59, "100");
   u8g2.drawXBMP(BRIGHTNESS + 7, 36, dn_arr_WIDTH, dn_arr_HEIGHT, dn_arr); // draw down arror which show the current selection
   u8g2.setCursor(BRIGHTNESS + 7, 33);
   u8g2.print(BRIGHTNESS);
@@ -300,6 +272,7 @@ void loop(void) {
           }
           //noInterrupts();
           drawUICounting(usvHr);
+
           if (usvHr > 2.5 && SoundEffect == SOS) {
             toneSOS();
           }
@@ -309,7 +282,7 @@ void loop(void) {
       }
 
     case SETTINGS: { // Settings Selecting
-        static int curr_sett = 0; //0 - brightness 1 - sound 2-RELMODE, started from zero
+        static int curr_sett = 0; //0 - brightness 1 - sound, started from zero
         u8g2.firstPage();
         do {
           drawTitle( "SETTINGS" );
@@ -323,12 +296,12 @@ void loop(void) {
                     curr_sett--;
                   }
                   else {
-                    curr_sett = setting_total_options - 1;
+                    curr_sett = total_options - 1;
                   }
                   break;
                 }
               case LOWER : {
-                  if (curr_sett < setting_total_options - 1) {
+                  if (curr_sett < total_options - 1) {
                     curr_sett++;
                   }
                   else {
@@ -336,7 +309,6 @@ void loop(void) {
                   }
                   break;
                 }
-              
               case MID_LONG : {
                   //if (longPressActive == true && buttonActiveOK == false)
                   if (curr_sett == 0) {
@@ -344,11 +316,6 @@ void loop(void) {
                   }
                   if (curr_sett == 1) {
                     menu = SOUND;
-                  }
-                  if (curr_sett == 2){
-                    IsRELModeOn = !IsRELModeOn;
-                    REF_REFERENCE = usvHr;
-                    menu = COUNT;
                   }
                   break;
                 }
@@ -424,7 +391,7 @@ void loop(void) {
                 }
               case MID_LONG : {
                   EEPROM.write(addrSOUND, curr_sound);
-                  SoundEffect = soundfx(curr_sound);
+                  SoundEffect = curr_sound;
                   menu = COUNT;
                   break;
                 }
