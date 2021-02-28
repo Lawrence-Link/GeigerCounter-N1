@@ -2,12 +2,12 @@
     ©LPD Lawrence Link 2021
     All rights reserved
     Geiger Counter N1
+    Licensed under GNU General Public License v3.0
     -------CONTACT AT-------
     Lawrence-Link@outlook.com
 */
 
-#define BOARD_VER 1
-
+#include "global.h"
 #include <Arduino.h>
 
 #include "Batt.h"
@@ -54,8 +54,8 @@ void setup(void) {
   led_initialize();
   buttons_init();
   menu = START;
-  attachInterrupt(INT0, sensorISR, FALLING); //Detect pulse at the falling edge
-  Timer1.initialize(1000000); //1s
+  attachInterrupt(digitalPinToInterrupt(PIN_GEIGER), sensorISR, FALLING); //Detect pulse at the falling edge
+  Timer1.initialize(1000000); // 1s interrupt
   Timer1.attachInterrupt(ISR_Timer1);
   u8g2.setContrast(EEPROM.read(0));
   SoundEffect = soundfx(EEPROM.read(10));
@@ -101,17 +101,22 @@ void drawUICounting( float endResult ) { // When Counter works..
   u8g2.drawLine(26, 0, 26, 11);
   u8g2.drawLine(44, 0, 44, 11);
   u8g2.drawLine(44, 0, 44, 11);
-
+#if (BOARD_VER == 2)
+  enableDivider();
+#endif
   // Batt-icon determine
   if (GetBatteryVolt() < 3.6) {
-    u8g2.drawXBMP(29, 4, BATT_ERR_WIDTH, BATT_ERR_HEIGHT, BATT_ERR);
+    u8g2.drawXBMP(29, 3, BATT_ERR_WIDTH, BATT_ERR_HEIGHT, BATT_ERR);
   } else if (GetBatteryVolt() < 3.8) {
-    u8g2.drawXBMP(29, 4, BATT_25_WIDTH, BATT_25_HEIGHT, BATT_25);
+    u8g2.drawXBMP(29, 3, BATT_25_WIDTH, BATT_25_HEIGHT, BATT_25);
   } else if (GetBatteryVolt() < 3.9) {
-    u8g2.drawXBMP(29, 4, BATT_75_WIDTH, BATT_75_HEIGHT, BATT_75);
+    u8g2.drawXBMP(29, 3, BATT_75_WIDTH, BATT_75_HEIGHT, BATT_75);
   } else if (GetBatteryVolt() >= 3.9) {
-    u8g2.drawXBMP(29, 4, BATT_100_WIDTH, BATT_100_HEIGHT, BATT_100);
+    u8g2.drawXBMP(29, 3, BATT_100_WIDTH, BATT_100_HEIGHT, BATT_100);
   }
+#if (BOARD_VER == 2)
+  disableDivider();
+#endif
   u8g2.setFont(u8g2_font_timB08_tf);
   char _str_ans[10];
   char _str_avr_ans[10];
@@ -127,7 +132,7 @@ void drawUICounting( float endResult ) { // When Counter works..
   } else {
     u8g2.drawStr(75, 10, " PAUSED");
   }
-
+#if (BOARD_VER == 1)
   if (isCharging()) { // if is charging, then draw
     u8g2.drawStr(36, 63, "CHG");
     u8g2.drawLine(0, 53, 60, 53); // Lower dividing line
@@ -136,13 +141,19 @@ void drawUICounting( float endResult ) { // When Counter works..
     u8g2.drawLine(0, 53, 33, 53); // Lower dividing line
     u8g2.drawLine(33, 53, 33, 63);
   }
+#endif
+
+#if (BOARD_VER == 2)
+  u8g2.drawLine(0, 53, 33, 53); // Lower dividing line
+  u8g2.drawLine(33, 53, 33, 63);
+#endif
 
   char _str_timing_buffer[5]; // ..xx[\a]
   sprintf(_str_timing_buffer, "..%d", 15 - tm1_counter);
   u8g2.drawStr(53, 10, _str_timing_buffer); // Timing left
 
   if (IsRELModeOn){
-    u8g2.drawStr(80, 55, "REL:REF:");
+    u8g2.drawStr(79, 55, "REL:REF:");
     u8g2.drawXBMP(63, 49, DELTA_WIDTH, DELTA_HEIGHT, DELTA_SIGN);
     char _str_REF_buffer[6];
     dtostrf(REF_REFERENCE, 2, 2, _str_REF_buffer);
@@ -152,7 +163,7 @@ void drawUICounting( float endResult ) { // When Counter works..
   u8g2.drawStr(80, 54, "AVG:");
   u8g2.drawStr(80, 63, _str_avr_ans);
   }
-  u8g2.drawStr(104, 63, "uSv/h");
+  u8g2.drawStr(103, 63, "uSv/h");
 
   switch (SoundEffect) { // Show sound effect of current
     case SOS: {

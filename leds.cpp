@@ -1,25 +1,35 @@
+/*
+    ©LPD Lawrence Link 2021
+    All rights reserved
+    Geiger Counter N1
+    Licensed under GNU General Public License v3.0
+    -------CONTACT AT-------
+    Lawrence-Link@outlook.com
+*/
+
 #include <Arduino.h>
 #include "leds.h"
+#include "global.h"
 void led_initialize(){
-  pinMode(A0, OUTPUT);
-  pinMode(A1, OUTPUT);
-  pinMode(A2, OUTPUT);
+  pinMode(PIN_LED_RED, OUTPUT);
+  pinMode(PIN_LED_GREEN, OUTPUT);
+  pinMode(PIN_LED_BLUE, OUTPUT);
   /* Turn all lights off(Common Anode) */
-  digitalWrite(A0, HIGH);
-  digitalWrite(A1, HIGH);
-  digitalWrite(A2, HIGH);
+  digitalWrite(PIN_LED_RED, HIGH);
+  digitalWrite(PIN_LED_GREEN, HIGH);
+  digitalWrite(PIN_LED_BLUE, HIGH);
 }
 
 void led_blue(bool state){
-  digitalWrite(A2, !state);
+  digitalWrite(PIN_LED_BLUE, !state);
 }
 
 void led_red(bool state){
-  digitalWrite(A0, !state);
+  digitalWrite(PIN_LED_RED, !state);
 }
 
 void led_green(bool state){
-  digitalWrite(A1, !state);
+  digitalWrite(PIN_LED_GREEN, !state);
 }
 
 void led_flash(LED_WARN _buf){

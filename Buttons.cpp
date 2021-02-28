@@ -1,16 +1,25 @@
+/*
+    ©LPD Lawrence Link 2021
+    All rights reserved
+    Geiger Counter N1
+    Licensed under GNU General Public License v3.0
+    -------CONTACT AT-------
+    Lawrence-Link@outlook.com
+*/
+
+#include "global.h"
 #include "Buttons.h"
 #include <Arduino.h>
 
-enum {up_btn = 10, ok_btn = 9, dn_btn = 8} button;
-enum {Short, Long} OK_BTN_STATE;
+enum {Short, Long} PIN_BUTTON_OK_STATE;
 bool buttonActiveOK = false; //needed to been accessable in the main loop
 bool longPressActive = false;
 #define longPressTime 200
 
 void buttons_init() {
-  pinMode(up_btn, INPUT_PULLUP);
-  pinMode(ok_btn, INPUT_PULLUP);
-  pinMode(dn_btn, INPUT_PULLUP);
+  pinMode(PIN_BUTTON_UP, INPUT_PULLUP);
+  pinMode(PIN_BUTTON_OK, INPUT_PULLUP);
+  pinMode(PIN_BUTTON_DN, INPUT_PULLUP);
 }
 
 buttonReturnDef refresh_button() {
@@ -21,21 +30,21 @@ buttonReturnDef refresh_button() {
   static bool buttonActiveUP = false;
   static bool buttonActiveDN = false;
   
-  if (digitalRead(up_btn) == LOW){
+  if (digitalRead(PIN_BUTTON_UP) == LOW){
     buttonActiveUP = true;
-  }else if (digitalRead(up_btn) == HIGH && buttonActiveUP == true){
+  }else if (digitalRead(PIN_BUTTON_UP) == HIGH && buttonActiveUP == true){
     buttonActiveUP = false;
     _buf = UPPER;
   }
   
-  else if (digitalRead(dn_btn) == LOW){
+  else if (digitalRead(PIN_BUTTON_DN) == LOW){
     buttonActiveDN = true;
-  }else if (digitalRead(dn_btn) == HIGH && buttonActiveDN == true){
+  }else if (digitalRead(PIN_BUTTON_DN) == HIGH && buttonActiveDN == true){
     buttonActiveDN = false;
     _buf = LOWER;
   }
   
-  else if (digitalRead(ok_btn) == LOW) {
+  else if (digitalRead(PIN_BUTTON_OK) == LOW) {
     if (buttonActiveOK == false) {
       buttonActiveOK = true;
       buttonTimer = millis();
@@ -45,7 +54,7 @@ buttonReturnDef refresh_button() {
       // Long press
       _buf = MID_LONG;
     }
-  } else if(digitalRead(ok_btn) == HIGH) {
+  } else if(digitalRead(PIN_BUTTON_OK) == HIGH) {
     if (buttonActiveOK == true) {
       if (longPressActive == true) {
         longPressActive = false;

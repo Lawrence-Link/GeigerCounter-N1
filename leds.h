@@ -1,3 +1,12 @@
+/*
+    ©LPD Lawrence Link 2021
+    All rights reserved
+    Geiger Counter N1
+    Licensed under GNU General Public License v3.0
+    -------CONTACT AT-------
+    Lawrence-Link@outlook.com
+*/
+
 #ifndef _LEDS_H_
 #define _LEDS_H_
 

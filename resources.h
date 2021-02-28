@@ -1,3 +1,12 @@
+/*
+    ©LPD Lawrence Link 2021
+    All rights reserved
+    Geiger Counter N1
+    Licensed under GNU General Public License v3.0
+    -------CONTACT AT-------
+    Lawrence-Link@outlook.com
+*/
+
 #include <U8g2lib.h>
 static const unsigned char Start_IMG[] U8X8_PROGMEM = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
