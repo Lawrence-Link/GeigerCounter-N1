@@ -16,6 +16,15 @@ from the original datasheets, we can then calculate in the unit of uSv/h.
 
 ## How to get started
 
-## Board design and print PCB
+The easist way to make this is by take a briefly look at my schematic and order PCBs and parts, which I will later show [here]()
+
+## BE AWARE
+
+The board contains a High power source, which can cause EMP problem, please DO NOT use this project near people with implemented medical device!
+Also, this power source can be dangerous to the user, but typically it won't cause much damage, just pain(FOR REAL), so please be careful, check twice before powering the HV Source.
+I recommend you to use kapton to cover the bottom side, to do better isolation.
 
 ## Get interact with me
+
+You can contact me at
+[Lawrence-Link@outlook.com](mailto:Lawrence-Link@outlook.com)
