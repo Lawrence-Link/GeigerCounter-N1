@@ -399,7 +399,7 @@ void loop(void) {
                   menu = COUNT;
                   break;
                 }
-                u8g2.setContrast(map(_brightness, 0, 100, 0, 255));
+                u8g2.setContrast(map(_brightness, 0, 100, 1, 255));
             }
           }
           drawBrightness(_brightness);
