@@ -7,6 +7,8 @@
     Lawrence-Link@outlook.com
 */
 
+// All XBMP resources listed here
+
 #include <U8g2lib.h>
 static const unsigned char Start_IMG[] U8X8_PROGMEM = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
