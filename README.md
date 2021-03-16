@@ -12,8 +12,8 @@ If you learned some stuff about the Geiger-Muller tube itself,
 you will see how we can calculate them, in the form of CPM, then use the data
 from the original datasheets, we can then calculate in the unit of uSv/h.
 
-![Picture Overview] (https://github.com/Lawrence-Link/GeigerCounter-N1/blob/main/pictures/IMG_20210228_122907.jpg?raw=true)
-![Picture Rendered V2] (https://github.com/Lawrence-Link/GeigerCounter-N1/blob/main/pictures/rendered.jpg?raw=true)
+![Picture Overview](https://github.com/Lawrence-Link/GeigerCounter-N1/blob/main/pictures/IMG_20210228_122907.jpg?raw=true)
+![Picture Rendered V2](https://github.com/Lawrence-Link/GeigerCounter-N1/blob/main/pictures/rendered.jpg?raw=true)
 
 [Click here to visit on allaboutcircuit.com]()
 
