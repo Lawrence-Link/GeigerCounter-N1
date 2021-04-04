@@ -10,11 +10,11 @@ The whole device doesn't contain something very technical.
 
 If you learned some stuff about the Geiger-Muller tube itself,
 you will see how we can calculate them, in the form of CPM, then use the data
-from the original datasheets, we can then calculate in the unit of uSv/h.
+from the original datasheets to convert them in the unit of uSv/h.
 
 <img src="https://github.com/Lawrence-Link/GeigerCounter-N1/blob/main/pictures/IMG_20210228_122907.jpg?raw=true" width="50%" /> <img src="https://github.com/Lawrence-Link/GeigerCounter-N1/blob/main/pictures/rendered.jpg?raw=true" width="50%" />
 
-##sub content
+[Find the article on Instructables](https://www.instructables.com/DIY-a-Simple-Geiger-Counter/)
 
 ## How to get started
 
