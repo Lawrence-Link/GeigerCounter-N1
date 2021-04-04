@@ -14,7 +14,7 @@ from the original datasheets, we can then calculate in the unit of uSv/h.
 
 <img src="https://github.com/Lawrence-Link/GeigerCounter-N1/blob/main/pictures/IMG_20210228_122907.jpg?raw=true" width="50%" /> <img src="https://github.com/Lawrence-Link/GeigerCounter-N1/blob/main/pictures/rendered.jpg?raw=true" width="50%" />
 
-[Click here to visit on allaboutcircuit.com]()
+##sub content
 
 ## How to get started
 
