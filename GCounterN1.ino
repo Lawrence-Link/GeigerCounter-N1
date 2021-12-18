@@ -24,7 +24,7 @@
 /* Global variants' definations */
 bool IsRunning = true;
 bool IsRELModeOn = false;
-enum menuSTG{START, COUNT, SETTINGS, BRIGHTNESS, SOUND} menu;
+enum menuSTG{START, COUNT, SETTINGS, BRIGHTNESS, SOUND,INFO} menu;
 enum soundfx{SOS, ON, OFF} SoundEffect;
 enum buttonReturnDef;
 enum {addrBRI = 0, addrSOUND = 10};
@@ -44,7 +44,7 @@ float REF_REFERENCE = 0;
 volatile short tm1_counter = 0;
 volatile float usvHr = 0;
 
-U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, /* clock=*/ A5, /* data=*/ A4, /* reset=*/ U8X8_PIN_NONE);  
 
 void setup(void) {
   u8g2.begin();
@@ -193,17 +193,19 @@ void drawUICounting( float endResult ) { // When Counter works..
 
 void drawSettings(int _curr) {
   u8g2.setFont(u8g2_font_saikyosansbold8_8u);
-  u8g2.drawStr(28, 26, "BRIGHTNESS");
-  u8g2.drawStr(28, 40, "SOUND");
-  u8g2.drawXBMP(0, 48, DELTA_WIDTH, DELTA_HEIGHT, DELTA_SIGN);
-  u8g2.drawStr(14, 58, "REL");
+  u8g2.drawStr(20, 26, "BRIGHTNESS");
+  u8g2.drawStr(20, 40, "SOUND");
+  u8g2.drawStr(20, 54, "INFO");
+  u8g2.drawXBMP(85, 48, DELTA_WIDTH, DELTA_HEIGHT, DELTA_SIGN);
+  u8g2.drawStr(99, 58, "REL");
   if (IsRELModeOn){
     u8g2.drawXBMP(37, 51, CHECK_SIGN_WIDTH, CHECK_SIGN_HEIGHT, CHECK_SIGN);
   }
   switch (_curr) {
-    case 0: u8g2.drawStr(17, 26, ">"); break;
-    case 1: u8g2.drawStr(17, 40, ">"); break;
-    case 2: u8g2.drawFrame(0, 47, 48, 16); break;
+    case 0: u8g2.drawStr(9, 26, ">"); break;
+    case 1: u8g2.drawStr(9, 40, ">"); break;
+    case 2: u8g2.drawStr(9, 54, ">"); break;
+    case 3: u8g2.drawFrame(82, 44, 44, 20); break;
     //case 2: u8g2.drawFrame(); break;  //delta 
   }
 }
@@ -251,7 +253,7 @@ void sensorISR() {
   }
 }
 
-#define setting_total_options 3 // How many items in the setting list (started from 1)
+#define setting_total_options 4 // How many items in the setting list (started from 1)
 
 extern bool buttonActiveOK;
 extern bool longPressActive;
@@ -356,11 +358,15 @@ void loop(void) {
                   if (curr_sett == 1) {
                     menu = SOUND;
                   }
-                  if (curr_sett == 2){
+                  if (curr_sett == 2) {
+                    menu = INFO;
+                  }
+                  if (curr_sett == 3){
                     IsRELModeOn = !IsRELModeOn;
                     REF_REFERENCE = usvHr;
                     menu = COUNT;
                   }
+
                   break;
                 }
             }
@@ -399,7 +405,7 @@ void loop(void) {
                   menu = COUNT;
                   break;
                 }
-                u8g2.setContrast(map(_brightness, 0, 100, 1, 255));
+                u8g2.setContrast(map(_brightness, 0, 100, 0, 255));
             }
           }
           drawBrightness(_brightness);
@@ -444,6 +450,21 @@ void loop(void) {
           drawSoundSettings(curr_sound);
         } while ( u8g2.nextPage() );
       }
+    case INFO: { // Sound Effect
+        u8g2.firstPage();
+        do {
+          drawTitle("INFO");
+          buttonReturnDef curr = refresh_button();
+          u8g2.setFont(u8g2_font_saikyosansbold8_8u);
+          u8g2.drawStr(20, 26, "TEST");//Geiger Counter N1
+          u8g2.drawStr(20, 40, "TEST"); //©LPD Lawrence Link 2021
+          if ((curr != NONE) && (curr == MID_LONG)) {
+//          if (curr != NONE) {
+            menu = COUNT;
+            break;
+          }
+        }while ( u8g2.nextPage() );
+    }
   }
 }
 
